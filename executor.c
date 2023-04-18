@@ -19,7 +19,7 @@
 #include "assert.h"
 #include "bitpack.h"
 #include "executor.h"
-#include "instructionSet.h"
+// #include "instructionSet.h"
 #include "memory.h"
 #include "registers.h"
 #include "seq.h"
@@ -61,7 +61,8 @@ void execute(Seq_T segment_0)
 {
         /* necessary data items initialized */
         uint32_t pc = 0;
-        Seq_T registers = createRegisters();
+       // Seq_T registers = createRegisters();
+        uint32_t registers[8] = { 0 };   
         Seq_T mapped_segments = Seq_new(0);
         Seq_T unmapped_identifiers = Seq_new(0);
         addSegToMemory(mapped_segments, segment_0);
@@ -71,8 +72,8 @@ void execute(Seq_T segment_0)
 
         /* Continues to execute until halt instruction is reached */
         while (executing) {
-                uint32_t instruction = getWord(
-                                       getSegment(mapped_segments, 0), pc);
+                //uint32_t instruction = getWord(getSegment(mapped_segments, 0), pc);
+                uint32_t instruction = registers[0];
                 int opcode = Bitpack_getu(instruction, 4, 28);
                 
                 if (opcode == 13) {
@@ -83,81 +84,91 @@ void execute(Seq_T segment_0)
                 
                 switch (opcode) {
                         
-                        case COND_MOV:
-                        conditionalMove(registers, genInfo->ra,
+                        case COND_MOV: ; 
+                        /* conditionalMove(registers, genInfo->ra,
                                                    genInfo->rb, 
-                                                   genInfo->rc);
+                                                   genInfo->rc); */
+                        bool c_is_0 = true;
+                        if (registers[genInfo->rc] != 0) {    
+                                c_is_0 = false;
+                        }
+                        if (!c_is_0)  {
+                                registers[genInfo->ra] = registers[genInfo->rb];
+                        }
                         break;
 
-                        case SEG_LOAD:
-                        segLoad(registers, mapped_segments, genInfo->ra,
-                                                            genInfo->rb,
-                                                            genInfo->rc);
-                        break;
+                        // case SEG_LOAD:
+                        //         segLoad(registers, mapped_segments, genInfo->ra,
+                        //                                         genInfo->rb,
+                        //                                         genInfo->rc);
+                        //         break;
                         
-                        case SEG_STORE:
-                        segStore(registers, mapped_segments, genInfo->ra,
-                                                             genInfo->rb,
-                                                             genInfo->rc);
-                        break;
+                        // case SEG_STORE:
+                        //         segStore(registers, mapped_segments, genInfo->ra,
+                        //                                         genInfo->rb,
+                        //                                         genInfo->rc);
+                        //         break;
                       
-                        case ADD:
-                        add(registers, genInfo->ra, genInfo->rb, genInfo->rc);
-                        break;
+                        case ADD: ; 
+                                registers[genInfo->ra] = registers[genInfo->rb] + registers[genInfo->rc];
+                                break;
 
-                        case MULT:
-                        multiply(registers, genInfo->ra,
-                                            genInfo->rb,
-                                            genInfo->rc);
-                        break;
+                        case MULT: ; 
+                                registers[genInfo->ra] = registers[genInfo->rb] * registers[genInfo->rc];
+                                break;
 
-                        case DIV:
-                        divide(registers, genInfo->ra,
-                                          genInfo->rb, 
-                                          genInfo->rc);
-                        break;
+                        case DIV: ; 
+                                assert(registers[genInfo->rc] != 0);
+                                registers[genInfo->ra] = registers[genInfo->rb] / registers[genInfo->rc];
+                                break;
 
-                        case NAND: 
-                        nand(registers, genInfo->ra, genInfo->rb, genInfo->rc);
-                        break;
+                        case NAND: ; 
+                                registers[genInfo->ra] = ~(registers[genInfo->rb] & registers[genInfo->rc]);
+                                break;
 
-                        case HALT:
-                        executing = false;
-                        break;
+                        case HALT: ; 
+                                executing = false;
+                                break;
                         
-                        case MAP:
-                        mapSegment(registers, mapped_segments,
-                                              unmapped_identifiers,
-                                              genInfo->rb, genInfo->rc);
-                        break;
+                        // case MAP:
+                        //         mapSegment(registers, mapped_segments,
+                        //                         unmapped_identifiers,
+                        //                       genInfo->rb, genInfo->rc);
+                        //         break;
 
-                        case UNMAP:
-                        unmapSegment(registers, mapped_segments,
-                                                unmapped_identifiers,
-                                                genInfo->rc);
-                        break;
+                        // case UNMAP:
+                        //         unmapSegment(registers, mapped_segments,
+                        //                         unmapped_identifiers,
+                        //                         genInfo->rc);
+                        //         break;
 
-                        case OUTPUT:
-                        output(registers, genInfo->rc);
-                        break;
+                        case OUTPUT: ; 
+                                printf("%c", registers[genInfo->rc]);
+                                break;
 
-                        case INPUT:
-                        input(registers, genInfo->rc);
-                        break;
+                        case INPUT: ;
+                                int input = getchar();
+                                uint32_t sentinel = ~0;
+                                if (input != EOF) {
+                                        registers[genInfo->rc] = input;
+                                } else {
+                                        registers[genInfo->rc] = sentinel;
+                                }
+                                break;
 
-                        case LOAD_PROGRAM:
-                        loadProgram(mapped_segments, unmapped_identifiers,
-                                                     registers, genInfo->rb,
-                                                     genInfo->rc, &pc);
-                        break;
+                        // case LOAD_PROGRAM:
+                        //         loadProgram(mapped_segments, unmapped_identifiers,
+                        //                              registers, genInfo->rb,
+                        //                              genInfo->rc, &pc);
+                        //         break;
                         
-                        case LOAD_VAL:
-                        loadValue(registers, loadInfo->ra, loadInfo->value);
-                        break;
+                        case LOAD_VAL: ;
+                                registers[loadInfo->ra] = loadInfo->value;
+                                break;
 
-                        default:
-                        fprintf(stderr, "Not a valid instruction\n");
-                        exit(EXIT_FAILURE);
+                        default: ;
+                                fprintf(stderr, "Not a valid instruction\n");
+                                exit(EXIT_FAILURE);
                 }   
                 
                 /* If loadprogram is called then we do NOT want to
@@ -172,7 +183,7 @@ void execute(Seq_T segment_0)
         free(genInfo);
 
         /* free registers */
-        Seq_free(&registers);
+        // Seq_free(&registers);
 
         /* free unmapped_identifiers */
         Seq_free(&unmapped_identifiers);
